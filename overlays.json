@@ -1,0 +1,13 @@
+{
+    "overlays" : 
+    [
+        {
+            "name"  : "ovl1",
+            "files" : ["ovl1/ovl1.c."]
+        },
+        {
+            "name"  : "ovl2",
+            "files" : ["ovl2/ovl2.c."]
+        }
+    ]
+}
