@@ -7,7 +7,6 @@
 #include "ovl2/ovl2.h"
 
 int main(void) {
-  overlay_init();
 
   // load overlay 1
   APP_LOG(0, "Overlay %d loaded", overlay_load(OVL1_OVL));
