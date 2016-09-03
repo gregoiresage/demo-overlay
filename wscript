@@ -116,7 +116,7 @@ def get_app_length(elf_file):
             app_start = int(columns[2],16)
         elif columns[0] in ['.data', '.got', '.got.plt', '.bss']:
             app_length = int(columns[2],16) + int(columns[4],16) - app_start
-    # app_length += 0x100 - (app_length % 0x100) # 0x100 alignment
+    app_length += 0x100 - (app_length % 0x100) # 0x100 alignment
     return app_length
  
 def get_strt_length(elf_file):

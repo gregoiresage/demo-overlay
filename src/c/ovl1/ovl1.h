@@ -1,3 +1,3 @@
 #include <pebble.h>
 
-int foo(int i);
+void feature_stdlib_push();

@@ -1,3 +1,3 @@
 #include <pebble.h>
 
-int bar();
+void app_font_browser_push();
