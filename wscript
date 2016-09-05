@@ -327,9 +327,14 @@ def custom_make_pbl_bundle(task_gen):
         bin_files.append({'watchapp':app_bin_file.abspath(),'resources':resources_pack.abspath(),'worker_bin':worker_bin_file.abspath()if worker_bin_file else None,'sdk_version':{'major':task_gen.bld.env.SDK_VERSION_MAJOR,'minor':task_gen.bld.env.SDK_VERSION_MINOR},'subfolder':task_gen.bld.env.BUNDLE_BIN_DIR})
     task_gen.bld.env=cached_env
     bundle_output=task_gen.bld.path.get_bld().make_node(task_gen.bld.env.BUNDLE_NAME)
-    task=task_gen.create_task('app_bundle',[],bundle_output)
+    if has_pkjs:
+        pebblejsapp=task_gen.bld.path.get_bld().find_or_declare('pebble-js-app.js')
+        task=task_gen.create_task('app_bundle',[pebblejsapp],bundle_output)
+        task.js_files=[pebblejsapp]
+    else:
+        task=task_gen.create_task('app_bundle',[],bundle_output)
+        task.js_files=js_files
     task.bin_files=bin_files
-    task.js_files=js_files
     task.dep_nodes=bundle_sources
 
 from waflib.Configure import conf
