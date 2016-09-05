@@ -88,11 +88,9 @@ def generate_default_ld_script(task):
     ldscript = open( task.outputs[0].abspath() ,'w' )
  
     values = {
-        'STRT_ORIGIN'   : '0',
-        'STRT_LENGTH'   : '0x8000',
-        'APP_ORIGIN'    : '0x8000',
-        'APP_LENGTH'    : '0x7000',
-        'OVERLAY_AT'    : '0xF000'
+        'STRT_LENGTH'   : '0xF000',
+        'OVL_LENGTH'    : '0xF000',
+        'APP_LENGTH'    : '0xF000'
     }
  
     for line in template_script:
@@ -100,6 +98,26 @@ def generate_default_ld_script(task):
         line = line.substitute(values)
         ldscript.write(line)
  
+def get_strt_length(elf_file):
+    return 0x82+0x26
+
+def get_overlay_length(elf_file):
+    length=0
+    readelf_process=Popen(['arm-none-eabi-readelf','-SW',elf_file],stdout=PIPE)
+    readelf_output=readelf_process.communicate()[0]
+ 
+    if not readelf_output:
+        raise InvalidBinaryError()
+
+    for line in readelf_output.splitlines():
+        if len(line)<10:
+            continue
+        line=line[6:]
+        columns=line.split()
+        if columns[0].endswith("_ovl") and not columns[0].startswith(".") :
+            length = max(length, int(columns[4],16))
+    return length
+
 def get_app_length(elf_file):
     app_length=0
     readelf_process=Popen(['arm-none-eabi-readelf','-SW',elf_file],stdout=PIPE)
@@ -116,51 +134,32 @@ def get_app_length(elf_file):
             app_start = int(columns[2],16)
         elif columns[0] in ['.data', '.got', '.got.plt', '.bss']:
             app_length = int(columns[2],16) + int(columns[4],16) - app_start
-    app_length += 0x100 - (app_length % 0x100) # 0x100 alignment
     return app_length
- 
-def get_strt_length(elf_file):
-    strt_length=0
-    readelf_process=Popen(['arm-none-eabi-readelf','-SW',elf_file],stdout=PIPE)
-    readelf_output=readelf_process.communicate()[0]
- 
-    if not readelf_output:
-        raise InvalidBinaryError()
-    for line in readelf_output.splitlines():
-        if len(line)<10:
-            continue
-        line=line[6:]
-        columns=line.split()
-        if columns[0].endswith("_ovl") and not columns[0].startswith(".") :
-            strt_length = max(strt_length, int(columns[4],16))
-    strt_length += 0x82+0x26;
-    strt_length += 0x100 - (strt_length % 0x100) # 0x100 alignment
-    return strt_length
- 
-def get_overlay_address(elf_file):
+
+def get_overlay_load_address(elf_file):
     strt_length = get_strt_length(elf_file)
+    ovl_length  = get_overlay_length(elf_file)
     app_length  = get_app_length(elf_file)
-    return (strt_length + app_length)
+    return (strt_length + ovl_length + app_length)
  
 def generate_final_ld_script(task):
     template_script = open( task.inputs[0].abspath() ,'r' )
     ldscript = open( task.outputs[0].abspath() ,'w' )
  
     strt_length = get_strt_length(task.inputs[1].abspath())
-    app_origin = strt_length
-    app_length = get_app_length(task.inputs[1].abspath())
-    overlay_at = get_overlay_address(task.inputs[1].abspath())
- 
-    print "STRT_LENGTH = " + str(hex(strt_length))
-    print "APP_LENGTH = " + str(hex(app_length))
-    print "OVERLAY_AT = " + str(hex(overlay_at))
+    ovl_length  = get_overlay_length(task.inputs[1].abspath())
+    app_length  = get_app_length(task.inputs[1].abspath())
+
+    print "----------------------------------------------------"
+    print "Overlay size = " + str(ovl_length) + ' bytes'
+    print "Not overlay size = " + str(app_length) + ' bytes'
+    print "Total footprint in RAM with overlays = " + str(strt_length + ovl_length + app_length) + ' bytes'
+    print "----------------------------------------------------"
  
     values = {
-        'STRT_ORIGIN'   : '0',
         'STRT_LENGTH'   : str(hex(strt_length)),
-        'APP_ORIGIN'    : str(hex(app_origin)),
-        'APP_LENGTH'    : str(hex(app_length)),
-        'OVERLAY_AT'    : str(hex(overlay_at))
+        'OVL_LENGTH'    : str(hex(ovl_length)),
+        'APP_LENGTH'    : str(hex(app_length))
     }
  
     for line in template_script:
@@ -287,7 +286,7 @@ def custom_generate_bin_file(task_gen,bin_type,elf_file,has_pkjs,has_worker):
     bin_file=platform_build_node.make_node('pebble-{}.bin'.format(bin_type))
     task_gen.bld(rule=objcopy.objcopy_bin,source=elf_file,target=full_raw_bin_file)
     def trim_raw_file(task):
-        overlay_address=get_overlay_address(task.inputs[0].abspath())
+        overlay_address=get_overlay_load_address(task.inputs[0].abspath())
         full_raw    = open( task.inputs[1].abspath() ,'rb' )
         trimmed_raw = open( task.outputs[0].abspath() ,'wb' )
         bytes=full_raw.read(overlay_address)
