@@ -170,7 +170,7 @@ def extract_ovl_sections(task):
     def extract_section(elf_file, offset, size):
         elf = open(elf_file,'rb')
         elf.seek(offset)
-        with open('resources/data/OVL.bin', "ab") as f:
+        with open('resources/data/OVL_{}.bin'.format(task.env.PLATFORM_NAME), "ab") as f:
             data = elf.read(size)
             f.write(data)
 
@@ -187,7 +187,7 @@ def extract_ovl_sections(task):
             if columns[0].endswith("_ovl") and not columns[0].startswith(".") :
                 extract_section(elf_file, int(columns[3],16), int(columns[4],16))
 
-    with open('resources/data/OVL.bin', "wb") as f:
+    with open('resources/data/OVL_{}.bin'.format(task.env.PLATFORM_NAME), "wb") as f:
             f.write('')
 
     extract_sections(task.inputs[0].abspath())
@@ -224,6 +224,10 @@ def build(ctx):
             bin_type='app',
             ldscript='build/{}/pebble_app_default.ld'.format(ctx.env.BUILD_DIR)
             )
+        for src in ctx.path.ant_glob('src/c/**/*.c') :   
+            ctx.add_manual_dependency(
+                src,
+                '{}/pebble_app_default.ld'.format(ctx.env.BUILD_DIR))
 
         # generate the final ld script
         ctx(
@@ -240,6 +244,10 @@ def build(ctx):
             bin_type='app',
             ldscript='build/{}/pebble_app_final.ld'.format(ctx.env.BUILD_DIR)
             )
+        for src in ctx.path.ant_glob('src/c/**/*.c') :   
+            ctx.add_manual_dependency(
+                src,
+                '{}/pebble_app_final.ld'.format(ctx.env.BUILD_DIR))
 
         if build_worker:
             worker_elf = '{}/pebble-worker.elf'.format(ctx.env.BUILD_DIR)
@@ -253,7 +261,8 @@ def build(ctx):
         # extract the binary overlay resources from elf file
         ctx(
             rule   = extract_ovl_sections,
-            source = app_elf
+            source = app_elf,
+            always=True
         )
 
     ctx.env = cached_env
