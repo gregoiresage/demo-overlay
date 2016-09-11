@@ -92,11 +92,21 @@ static void draw_row(GContext *ctx, const Layer *cell_layer, MenuIndex *cell_ind
   menu_cell_basic_draw(ctx, cell_layer, font->name, font->variant, NULL);
 }
 
+static void font_window_load(Window *window);
+static void font_window_unload(Window *window);
+
 /*
  * When a window is clicked, update the currently selected row and push the font window to the front.
  */
 static void select_click(struct MenuLayer *menu_layer, MenuIndex *cell_index, void *callback_context) {
   current_font = cell_index->row;
+
+  font_window = window_create();
+  // window_set_window_handlers(font_window, font_window_handlers);
+  window_set_window_handlers(font_window, (WindowHandlers) {
+    .load = font_window_load,
+    .unload = font_window_unload
+  });
 
   window_stack_push(font_window, true);
 }
@@ -267,17 +277,17 @@ static void font_window_unload(Window *window) {
   font_window = NULL;
 }
 
-/*
- * Declare our handlers for both window
- */
-static WindowHandlers main_window_handlers = {
-  .load = main_window_load,
-  .unload = main_window_unload
-};
-static WindowHandlers font_window_handlers = {
-  .load = font_window_load,
-  .unload = font_window_unload
-};
+// /*
+//  * Declare our handlers for both window
+//  */
+// static WindowHandlers main_window_handlers = {
+//   .load = main_window_load,
+//   .unload = main_window_unload
+// };
+// static WindowHandlers font_window_handlers = {
+//   .load = font_window_load,
+//   .unload = font_window_unload
+// };
 
 /*
  * Initialize our app and both windows
@@ -291,13 +301,6 @@ void app_font_browser_push() {
   window_set_window_handlers(main_window, (WindowHandlers) {
     .load = main_window_load,
     .unload = main_window_unload
-  });
-
-  font_window = window_create();
-  // window_set_window_handlers(font_window, font_window_handlers);
-  window_set_window_handlers(font_window, (WindowHandlers) {
-    .load = font_window_load,
-    .unload = font_window_unload
   });
 
   window_stack_push(main_window, true /* Animated */);
