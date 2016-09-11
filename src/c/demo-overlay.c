@@ -5,21 +5,24 @@
 
 #include "ovl1/ovl1.h"
 #include "ovl2/ovl2.h"
+#include "ovl3/ovl3.h"
+#include "ovl4/ovl4.h"
 
 #define DEMO_NUM_MENU_SECTIONS 1
-#define DEMO_NUM_APPS_ITEMS 2
 
 static Window *window;
 
 static SimpleMenuLayer *simple_menu_layer;
 static SimpleMenuSection menu_sections[DEMO_NUM_MENU_SECTIONS];
-static SimpleMenuItem apps_menu_items[DEMO_NUM_APPS_ITEMS];
+static SimpleMenuItem apps_menu_items[NUM_OVERLAYS];
 
 static void menu_app_select_callback(int index, void *ctx) {
   overlay_load(index);
   switch(index){
     case OVL1_OVL : feature_stdlib_push(); break;
     case OVL2_OVL : app_font_browser_push(); break;
+    case OVL3_OVL : show_ovl3(); break;
+    case OVL4_OVL : show_ovl4(); break;
   }
 }
 
@@ -33,9 +36,17 @@ static void window_load(Window *window) {
       .title = "Overlay 1",
       .callback = menu_app_select_callback,
     };
+  apps_menu_items[2] = (SimpleMenuItem){
+      .title = "Overlay 2",
+      .callback = menu_app_select_callback,
+    };
+  apps_menu_items[3] = (SimpleMenuItem){
+      .title = "Overlay 3",
+      .callback = menu_app_select_callback,
+    };
 
   menu_sections[0] = (SimpleMenuSection){
-    .num_items = DEMO_NUM_APPS_ITEMS,
+    .num_items = NUM_OVERLAYS,
     .items = apps_menu_items,
     .title = "Demos"
   };
