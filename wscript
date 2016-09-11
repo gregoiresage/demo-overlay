@@ -62,13 +62,10 @@ def generate_ld_tpl_ovl(task):
             ovl_content = ovl_content + '\t\t\t*/'+fileName+'*(.bss*)\n'
  
         ovl_content = ovl_content + '\t\t}\n'
- 
-        if(firstoverlay_name == ''):
-            ovl_table = '\t\t\tLONG(0);\n'
-            firstoverlay_name = overlay_name
-        else:
-            ovl_table = ovl_table + '\t\t\tLONG(LOADADDR('+overlay_name+'_ovl) - LOADADDR('+firstoverlay_name+'_ovl));\n'
+
+        ovl_table = ovl_table + '\t\t\tLONG(ABSOLUTE(ADDR(' + overlay_name +'_ovl)));\n'
         ovl_table = ovl_table + '\t\t\tLONG(SIZEOF(' + overlay_name +'_ovl));\n'
+        ovl_table = ovl_table + '\t\t\tLONG(LOADADDR('+overlay_name+'_ovl));\n'
  
         overlay_header.write('\t' + overlay_name.upper() + '_OVL,\n')
  
@@ -99,7 +96,9 @@ def generate_default_ld_script(task):
         ldscript.write(line)
  
 def get_strt_length(elf_file):
-    return 0x82+0x26
+    length = 0x82+0x26
+    # length += 0x100 - (length % 0x100)
+    return length
 
 def get_overlay_length(elf_file):
     length=0
@@ -116,6 +115,7 @@ def get_overlay_length(elf_file):
         columns=line.split()
         if columns[0].endswith("_ovl") and not columns[0].startswith(".") :
             length = max(length, int(columns[4],16))
+    # length += 0x100 - (length % 0x100)
     return length
 
 def get_app_length(elf_file):
@@ -130,10 +130,12 @@ def get_app_length(elf_file):
             continue
         line=line[6:]
         columns=line.split()
-        if columns[0]=='.text2' :
+        if columns[0]=='.text' :
             app_start = int(columns[2],16)
         elif columns[0] in ['.data', '.got', '.got.plt', '.bss']:
-            app_length = int(columns[2],16) + int(columns[4],16) - app_start
+            app_length = max(app_length, int(columns[2],16) + int(columns[4],16))
+    app_length -= app_start
+    app_length += 0x100 - (app_length % 0x100)
     return app_length
 
 def get_overlay_load_address(elf_file):

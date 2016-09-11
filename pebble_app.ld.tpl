@@ -26,7 +26,7 @@ SECTIONS
 $OVL_CONTENT
 	} > OVL
 
-	.text2 : 
+	.text : 
 	{
 		*(.text)
 		*(.text.*)
@@ -40,6 +40,8 @@ $OVL_CONTENT
 		*(.data.*)
 		_ovly_table = .; 
 $OVL_TABLE
+		_novlys = .;
+			LONG((_novlys - _ovly_table) / 12);
 			
 	} > APP
 
