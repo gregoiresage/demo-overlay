@@ -22,7 +22,7 @@ uint16_t overlay_load(uint16_t overlay_id)
 			_ovly_table[overlay_id][1]);								// size of the overlay
 
 		// Check if the loaded size is correct
-		if(size == _ovly_table[overlay_id][2]){
+		if(size == _ovly_table[overlay_id][1]){
 			APP_LOG(APP_LOG_LEVEL_INFO, "app:%d size:%d",overlay_id, size);
 			s_current_ovl = overlay_id;
 		}
